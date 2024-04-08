@@ -2,27 +2,23 @@ import { useState } from "react";
 import Player from "./components/Player";
 import GameBoard from "./components/GameBoard";
 import Log from "./components/Log";
-import { WINNING_COMBINATIONS } from "./winning-combinations";
+
 import GameOver from "./components/GameOver";
+import { determineWinner, setUpBoard } from "./utils";
 
 function deriveActivePlayer(log) {
-  // log[0] holds who JUST went.
-  // eg. if X just went, then it's O's turn next.
   return log.length > 0 && log[0].player === "X" ? "O" : "X";
 }
-
-const initialBoard = [
-  [null, null, null],
-  [null, null, null],
-  [null, null, null],
-];
 
 function App() {
   const [playerNames, setPlayerNames] = useState({
     X: "Player 1",
     O: "Player 2",
   });
-  const [turnsLog, setTurnsLog] = useState([]); // turnsLog is stacked (turnsLog[0] is newest)
+  // turnsLog is stacked (turnsLog[0] is newest)
+  //  log[0] holds who JUST went.
+  //  eg. if X just went, then it's O's turn next.
+  const [turnsLog, setTurnsLog] = useState([]);
   const currentActivePlayer = deriveActivePlayer(turnsLog);
 
   function handlePlayerNameChange(symbol, newName) {
@@ -35,30 +31,10 @@ function App() {
   }
 
   // setting up the board each time the log changes
-  //  note: ensure that board is a COPY of initialBoard, not a reference to it.
-  //        this way, refreshing the board (ie. an empty turnsLog) will not maintain the previous initialBoard.
-  let board = initialBoard.map((row) => [...row]);
-  for (const turn of turnsLog) {
-    const { row, col } = turn.square;
-    board[row][col] = turn.player;
-  }
+  let board = setUpBoard({ turnsLog });
 
   // checking if there is a winner each time the log changes
-  let winner;
-  const hasDraw = turnsLog.length === 9 && !winner;
-  for (const combination of WINNING_COMBINATIONS) {
-    const firstSquareSymbol = board[combination[0].row][combination[0].column];
-    const secondSquareSymbol = board[combination[1].row][combination[1].column];
-    const thirdSquareSymbol = board[combination[2].row][combination[2].column];
-
-    if (
-      firstSquareSymbol &&
-      firstSquareSymbol === secondSquareSymbol &&
-      firstSquareSymbol === thirdSquareSymbol
-    ) {
-      winner = playerNames[firstSquareSymbol];
-    }
-  }
+  let [winner, hasDraw] = determineWinner({ turnsLog, board, playerNames });
 
   function handleSelectSquare(rowIndex, colIndex) {
     setTurnsLog((pastTurns) => {
