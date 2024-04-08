@@ -1,12 +1,6 @@
 import { useState } from "react";
 
-const initialBoard = [
-  [null, null, null],
-  [null, null, null],
-  [null, null, null],
-];
-
-export default function GameBoard({ handleSelectSquare, log }) {
+export default function GameBoard({ handleSelectSquare, log, board }) {
   // goal: render the board dynamically
 
   // Setting the board with these states/setup is not desired;
@@ -24,17 +18,6 @@ export default function GameBoard({ handleSelectSquare, log }) {
 
   // instead, we seek to derive the game "board" from the state of the log array
   // via "deriving state from (state, or other) props!"
-  let board = initialBoard;
-  for (const turn of log) {
-    // use const bc don't want to mutate log (turnsLog) array
-    // note: turn is an object:
-    // {
-    //   square: { row: rowIndex, col: colIndex },
-    //   player: lastPlayer,
-    // }
-    const { row, col } = turn.square;
-    board[row][col] = turn.player;
-  }
 
   return (
     <ol id="game-board">
@@ -43,7 +26,10 @@ export default function GameBoard({ handleSelectSquare, log }) {
           <ol>
             {row.map((cell, colIndex) => (
               <li key={colIndex}>
-                <button onClick={() => handleSelectSquare(rowIndex, colIndex)}>
+                <button
+                  onClick={() => handleSelectSquare(rowIndex, colIndex)}
+                  disabled={cell !== null}
+                >
                   {cell}
                 </button>
               </li>

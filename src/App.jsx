@@ -3,31 +3,60 @@ import Player from "./components/Player";
 import GameBoard from "./components/GameBoard";
 import Log from "./components/Log";
 
+import GameOver from "./components/GameOver";
+import { determineWinner, setUpBoard } from "./utils";
+
+function deriveActivePlayer(log) {
+  return log.length > 0 && log[0].player === "X" ? "O" : "X";
+}
+
 function App() {
+  const [playerNames, setPlayerNames] = useState({
+    X: "Player 1",
+    O: "Player 2",
+  });
+  // turnsLog is stacked (turnsLog[0] is newest)
+  //  log[0] holds who JUST went.
+  //  eg. if X just went, then it's O's turn next.
   const [turnsLog, setTurnsLog] = useState([]);
-  const [currentActivePlayer, setCurrentActivePlayer] = useState("X");
+  const currentActivePlayer = deriveActivePlayer(turnsLog);
+
+  function handlePlayerNameChange(symbol, newName) {
+    setPlayerNames((previousNames) => {
+      return {
+        ...previousNames,
+        [symbol]: newName,
+      };
+    });
+  }
+
+  // setting up the board each time the log changes
+  let board = setUpBoard({ turnsLog });
+
+  // checking if there is a winner each time the log changes
+  let [winner, hasDraw] = determineWinner({ turnsLog, board, playerNames });
 
   function handleSelectSquare(rowIndex, colIndex) {
-    setCurrentActivePlayer((currentActivePlayer) =>
-      currentActivePlayer === "X" ? "O" : "X"
-    );
     setTurnsLog((pastTurns) => {
       // note: don't use player: currentActivePlayer dependent on state val
       //    because the state value may not be updated immediately in future...
       //    instead, determine it via the last addition to the array.
-      let lastPlayer =
-        pastTurns.length > 0 && pastTurns[0].player === "X" ? "O" : "X";
+      let whoJustPlayed = deriveActivePlayer(pastTurns);
 
       const updatedTurnsLog = [
         {
           square: { row: rowIndex, col: colIndex },
-          player: lastPlayer,
+          player: whoJustPlayed,
         },
         ...pastTurns,
       ];
 
       return updatedTurnsLog;
     });
+  }
+
+  function handleRestart() {
+    setTurnsLog([]);
   }
 
   return (
@@ -38,17 +67,25 @@ function App() {
             initialName="Player 1"
             symbol="X"
             currentTurn={currentActivePlayer === "X"}
+            onNameChange={handlePlayerNameChange}
           />
           <Player
             initialName="Player 2"
             symbol="O"
             currentTurn={currentActivePlayer === "O"}
+            onNameChange={handlePlayerNameChange}
           />
         </ol>
-        <GameBoard handleSelectSquare={handleSelectSquare} log={turnsLog} />
-        <Log />
+        {(winner || hasDraw) && (
+          <GameOver winner={winner} onRestart={handleRestart} />
+        )}
+        <GameBoard
+          handleSelectSquare={handleSelectSquare}
+          log={turnsLog}
+          board={board}
+        />
       </div>
-      LOG
+      <Log log={turnsLog} />
     </main>
   );
 }
